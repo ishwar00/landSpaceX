@@ -29,11 +29,11 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     const rocketWidth = 8;
     const rocketHeight = 60;
     const vertices = [
-      { x: 0, y: -rocketHeight/2 },               // Top point
-      { x: rocketWidth/2, y: -rocketHeight/3 },   // Right shoulder
-      { x: rocketWidth/2, y: rocketHeight/2 },    // Right bottom
-      { x: -rocketWidth/2, y: rocketHeight/2 },   // Left bottom
-      { x: -rocketWidth/2, y: -rocketHeight/3 },  // Left shoulder
+      { x: 0, y: -rocketHeight / 2 },               // Top point
+      { x: rocketWidth / 2, y: -rocketHeight / 3 },   // Right shoulder
+      { x: rocketWidth / 2, y: rocketHeight / 2 },    // Right bottom
+      { x: -rocketWidth / 2, y: rocketHeight / 2 },   // Left bottom
+      { x: -rocketWidth / 2, y: -rocketHeight / 3 },  // Left shoulder
     ];
 
     // Create rocket body
@@ -56,7 +56,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       canvas.height - 30,    // y position
       60,                    // width
       5,                     // height
-      { 
+      {
         isStatic: true,
         render: {
           fillStyle: '#4CAF50',
@@ -105,11 +105,11 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       // Draw rocket body
       ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.moveTo(0, -rocketHeight/2);
-      ctx.lineTo(rocketWidth/2, -rocketHeight/3);
-      ctx.lineTo(rocketWidth/2, rocketHeight/2);
-      ctx.lineTo(-rocketWidth/2, rocketHeight/2);
-      ctx.lineTo(-rocketWidth/2, -rocketHeight/3);
+      ctx.moveTo(0, -rocketHeight / 2);
+      ctx.lineTo(rocketWidth / 2, -rocketHeight / 3);
+      ctx.lineTo(rocketWidth / 2, rocketHeight / 2);
+      ctx.lineTo(-rocketWidth / 2, rocketHeight / 2);
+      ctx.lineTo(-rocketWidth / 2, -rocketHeight / 3);
       ctx.closePath();
       ctx.fill();
 
@@ -118,11 +118,12 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       const thrusterWidth = 3;
       const thrusterHeight = 3;
       const thrusterY = rocketHeight * 0.4;
-      ctx.fillRect(-rocketWidth/2 - thrusterWidth, thrusterY, thrusterWidth, thrusterHeight);
-      ctx.fillRect(rocketWidth/2, thrusterY, thrusterWidth, thrusterHeight);
+      ctx.fillRect(-rocketWidth / 2 - thrusterWidth, thrusterY, thrusterWidth, thrusterHeight);
+      ctx.fillRect(rocketWidth / 2, thrusterY, thrusterWidth, thrusterHeight);
 
       // Draw exhaust if thrusting
       try {
+        console.log(controlFunction);
         const controlFn = new Function('state', 'landingPad', controlFunction);
         const control = controlFn(
           {
@@ -142,9 +143,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
         if (control.mainThrust > 0) {
           ctx.fillStyle = '#ff6b00';
           ctx.beginPath();
-          ctx.moveTo(-2, rocketHeight/2);
-          ctx.lineTo(2, rocketHeight/2);
-          ctx.lineTo(0, rocketHeight/2 + 10 * control.mainThrust);
+          ctx.moveTo(-2, rocketHeight / 2);
+          ctx.lineTo(2, rocketHeight / 2);
+          ctx.lineTo(0, rocketHeight / 2 + 10 * control.mainThrust);
           ctx.closePath();
           ctx.fill();
         }
@@ -152,9 +153,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
         if (control.leftThrust > 0) {
           ctx.fillStyle = '#ff6b00';
           ctx.beginPath();
-          ctx.moveTo(rocketWidth/2 + thrusterWidth, thrusterY);
-          ctx.lineTo(rocketWidth/2 + thrusterWidth, thrusterY + thrusterHeight);
-          ctx.lineTo(rocketWidth/2 + thrusterWidth + 5 * control.leftThrust, thrusterY + thrusterHeight/2);
+          ctx.moveTo(rocketWidth / 2 + thrusterWidth, thrusterY);
+          ctx.lineTo(rocketWidth / 2 + thrusterWidth, thrusterY + thrusterHeight);
+          ctx.lineTo(rocketWidth / 2 + thrusterWidth + 5 * control.leftThrust, thrusterY + thrusterHeight / 2);
           ctx.closePath();
           ctx.fill();
         }
@@ -162,13 +163,14 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
         if (control.rightThrust > 0) {
           ctx.fillStyle = '#ff6b00';
           ctx.beginPath();
-          ctx.moveTo(-rocketWidth/2 - thrusterWidth, thrusterY);
-          ctx.lineTo(-rocketWidth/2 - thrusterWidth, thrusterY + thrusterHeight);
-          ctx.lineTo(-rocketWidth/2 - thrusterWidth - 5 * control.rightThrust, thrusterY + thrusterHeight/2);
+          ctx.moveTo(-rocketWidth / 2 - thrusterWidth, thrusterY);
+          ctx.lineTo(-rocketWidth / 2 - thrusterWidth, thrusterY + thrusterHeight);
+          ctx.lineTo(-rocketWidth / 2 - thrusterWidth - 5 * control.rightThrust, thrusterY + thrusterHeight / 2);
           ctx.closePath();
           ctx.fill();
         }
       } catch (error) {
+        console.log(error)
         // Ignore control function errors during rendering
       }
 
@@ -176,7 +178,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     };
 
     // Override Matter.js render with custom render
-    Matter.Render.run = () => {};
+    Matter.Render.run = () => { };
     render.canvas.width = canvas.width;
     render.canvas.height = canvas.height;
 
@@ -190,7 +192,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
 
       canvas.width = parent.clientWidth;
       canvas.height = parent.clientHeight;
-      
+
       // Update landing pad position
       Matter.Body.setPosition(landingPad, {
         x: canvas.width * 0.7,
@@ -234,7 +236,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
 
           try {
             // Execute user's control function
-            const controlFn = new Function('state', 'landingPad', controlFunction);
+            const controlFn = new Function('state', 'landingPad', `return (${controlFunction})(state, landingPad);`);
             const control = controlFn(
               {
                 position: rocket.position,
@@ -249,6 +251,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
                 width: 60,
               }
             );
+            console.log(control)
 
             // Apply forces based on control
             if (control.mainThrust) {
