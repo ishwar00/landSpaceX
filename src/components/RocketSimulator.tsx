@@ -99,17 +99,18 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
 
       // Save context for rocket rotation
       ctx.save();
-      ctx.translate(rocket.position.x, rocket.position.y);
-      ctx.rotate(rocket.angle);
+      // ctx.translate(rocket.position.x, rocket.position.y);
+      // ctx.rotate(rocket.angle);
 
       // Draw rocket body
       ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.moveTo(0, -rocketHeight / 2);
-      ctx.lineTo(rocketWidth / 2, -rocketHeight / 3);
-      ctx.lineTo(rocketWidth / 2, rocketHeight / 2);
-      ctx.lineTo(-rocketWidth / 2, rocketHeight / 2);
-      ctx.lineTo(-rocketWidth / 2, -rocketHeight / 3);
+      const vertices = rocket.vertices;
+      ctx.moveTo(vertices[0].x, vertices[0].y);
+      for (let i = 1; i < vertices.length; i++) {
+        const vertex = vertices[i];
+        ctx.lineTo(vertex.x, vertex.y);
+      }
       ctx.closePath();
       ctx.fill();
 
@@ -123,7 +124,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
 
       // Draw exhaust if thrusting
       try {
-        console.log(controlFunction);
+        // console.log(controlFunction);
         const controlFn = new Function('state', 'landingPad', controlFunction);
         const control = controlFn(
           {
@@ -138,8 +139,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
             y: landingPad.position.y,
             width: 60,
           }
-        );
+        ) ?? { mainThrust: 0, leftThrust: 0, rightThrust: 0 };
 
+        // console.log(control)
         if (control.mainThrust > 0) {
           ctx.fillStyle = '#ff6b00';
           ctx.beginPath();
@@ -178,13 +180,10 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     };
 
     // Override Matter.js render with custom render
-    Matter.Render.run = () => { };
+    // Matter.Render.run = () => { };
     render.canvas.width = canvas.width;
     render.canvas.height = canvas.height;
-
-    // Start physics engine
     Matter.Runner.run(engine);
-
     // Resize handler
     const handleResize = () => {
       const parent = canvas.parentElement;
@@ -206,7 +205,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     // Animation loop
     const animate = () => {
       renderScene();
-      requestRef.current = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
     };
     animate();
 
@@ -215,7 +214,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       window.removeEventListener('resize', handleResize);
       Matter.Engine.clear(engine);
       if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
+        // cancelAnimationFrame(requestRef.current);
       }
     };
   }, []);
@@ -230,8 +229,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     if (isRunning) {
       let lastTime = 0;
       const animate = (time: number) => {
+        console.log(rocket.vertices[0])
         if (lastTime !== 0) {
-          const delta = time - lastTime;
+          const delta = Math.min(time - lastTime, 15);
           Matter.Engine.update(engineRef.current!, delta);
 
           try {
@@ -250,8 +250,8 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
                 y: canvas.height - 30,
                 width: 60,
               }
-            );
-            console.log(control)
+            ) ?? { mainThrust: 0, leftThrust: 0, rightThrust: 0 };
+            // console.log(control)
 
             // Apply forces based on control
             if (control.mainThrust) {
@@ -279,8 +279,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       };
       requestRef.current = requestAnimationFrame(animate);
     } else {
+      console.log('resetting')
       // Reset rocket position
-      Matter.Body.setPosition(rocket, { x: canvas.width * 0.3, y: canvas.height * 0.15 });
+      Matter.Body.setPosition(rocket, { x: canvas.width * 0.15, y: canvas.height * 0.15 });
       Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
       Matter.Body.setAngle(rocket, 0);
       Matter.Body.setAngularVelocity(rocket, 0);
