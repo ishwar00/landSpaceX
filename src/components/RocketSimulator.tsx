@@ -2,13 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 import Matter from 'matter-js';
-import { animateExhaust } from '@/core/exhaust';
+import { RocketExhaust } from '@/core/exhaust';
 
 interface RocketSimulatorProps {
   controlFunction: string;
   isRunning: boolean;
   onReset: () => void;
 }
+
+let exhuast: RocketExhaust | null = null;
 
 const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -145,7 +147,13 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
         if (control.mainThrust > 0) {
           const vertices = rocket.vertices;
           console.log(rocket.angle * 180 / Math.PI)
-          animateExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+          ctx.fillStyle = '#ff6b00';
+          if (!exhuast) {
+            exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+          }
+          exhuast.updateParameters( vertices[4], vertices[3], control.mainThrust, rocket.angle);
+          exhuast.startAnimation();
+          exhuast.stopAnimation();
           // ctx.fillStyle = '#ff6b00';
           // ctx.beginPath();
           // ctx.moveTo(-2, rocketHeight / 2);
@@ -298,7 +306,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-full"
+      className="w-full h-full background-black"
     />
   );
 };
