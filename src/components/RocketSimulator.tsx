@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Matter from 'matter-js';
+import { animateExhaust } from '@/core/exhaust';
 
 interface RocketSimulatorProps {
   controlFunction: string;
@@ -125,7 +126,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       // Draw exhaust if thrusting
       try {
         // console.log(controlFunction);
-        const controlFn = new Function('state', 'landingPad', controlFunction);
+        const controlFn = new Function('state', 'landingPad', `return (${controlFunction})(state, landingPad);`);
         const control = controlFn(
           {
             position: rocket.position,
@@ -139,17 +140,19 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
             y: landingPad.position.y,
             width: 60,
           }
-        ) ?? { mainThrust: 0, leftThrust: 0, rightThrust: 0 };
+        );
 
-        // console.log(control)
         if (control.mainThrust > 0) {
-          ctx.fillStyle = '#ff6b00';
-          ctx.beginPath();
-          ctx.moveTo(-2, rocketHeight / 2);
-          ctx.lineTo(2, rocketHeight / 2);
-          ctx.lineTo(0, rocketHeight / 2 + 10 * control.mainThrust);
-          ctx.closePath();
-          ctx.fill();
+          const vertices = rocket.vertices;
+          console.log(rocket.angle * 180 / Math.PI)
+          animateExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+          // ctx.fillStyle = '#ff6b00';
+          // ctx.beginPath();
+          // ctx.moveTo(-2, rocketHeight / 2);
+          // ctx.lineTo(2, rocketHeight / 2);
+          // ctx.lineTo(0, rocketHeight / 2 + 10 * control.mainThrust);
+          // ctx.closePath();
+          // ctx.fill();
         }
 
         if (control.leftThrust > 0) {
@@ -229,7 +232,6 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     if (isRunning) {
       let lastTime = 0;
       const animate = (time: number) => {
-        console.log(rocket.vertices[0])
         if (lastTime !== 0) {
           const delta = Math.min(time - lastTime, 15);
           Matter.Engine.update(engineRef.current!, delta);
@@ -250,8 +252,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
                 y: canvas.height - 30,
                 width: 60,
               }
-            ) ?? { mainThrust: 0, leftThrust: 0, rightThrust: 0 };
-            // console.log(control)
+            )
 
             // Apply forces based on control
             if (control.mainThrust) {
