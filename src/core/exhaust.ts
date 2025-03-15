@@ -3,9 +3,8 @@ import Matter from "matter-js";
 export class RocketExhaust {
     private particles: Particle[] = [];
     private animationFrameId?: number;
-    private baseSpeed = 5;
+    private baseSpeed = 2;
     private speedVariance = 30;
-    private maxDistance = 0;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
