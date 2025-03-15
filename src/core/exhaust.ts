@@ -13,7 +13,6 @@ export class RocketExhaust {
         private exhaustAmount: number,
         private angle: number
     ) {
-        console.log(leftPoint, rightPoint)
         this.startAnimation();
     }
 
@@ -116,7 +115,7 @@ export class RocketExhaust {
             // console.log(temp)
 
             // Get color from temperature
-            const [r, g, b] = this.temperatureToColor(temp);
+            const [r, g, b] = this.temperatureToColor(100);
 
             // Create gradient with distance-based falloff
             const gradient = this.ctx.createRadialGradient(
@@ -144,17 +143,17 @@ export class RocketExhaust {
         // Enhanced color calculation
         let r, g, b;
 
-        if (temp > 66) {
+        // if (temp > 66) {
             // Hot region(blue - white)
             r = 255;
             g = Math.max(0, 255 - (temp - 66) * 2.5);
             b = Math.max(0, 255 - (temp - 66) * 1.2);
-        } else {
-            // Cool region (orange-red)
-            r = 255;
-            g = Math.min(255, 125 + temp * 1.5);
-            b = Math.max(0, 50 - temp * 0.5);
-        }
+        // } else {
+        //     // Cool region (orange-red)
+        //     r = 255;
+        //     g = Math.min(255, 125 + temp * 1.5);
+        //     b = Math.max(0, 50 - temp * 0.5);
+        // }
 
         return [
             Math.min(255, r),
