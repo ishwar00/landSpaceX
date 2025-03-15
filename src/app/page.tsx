@@ -17,20 +17,12 @@ export default function Home() {
   //   fuel
   // }
   // landingPad = { x, y, width }
-console.log("yooooooooooooo")
-  
-  const seed = Date.now();
-  // Use the seed to generate a deterministic random value between 0 and 1
-  const seedRand = Math.abs(Math.sin(seed)) % 1;
-
-  const angles = [Math.PI/4, Math.PI/2, Math.PI*3/4];
-  const angleIndex = Math.floor(seedRand * angles.length);
   
   // Example: Apply thrust when above landing pad
   if (state.position.x < landingPad.x) {
     return {
       mainThrust: 0.5,    // 0 to 1
-      angleOfThrust: angles[angleIndex],    // 0 to 360
+      angleOfThrust: Math.PI/2,    // 0 to 360
     };
   }
   

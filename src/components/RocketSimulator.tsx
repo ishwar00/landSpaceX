@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Matter from 'matter-js';
 import { RocketExhaust } from '@/core/exhaust';
+import { defaultControlRocket } from '@/core/controller';
 
 interface RocketSimulatorProps {
   controlFunction: string;
@@ -23,8 +24,8 @@ const createRocketVertices = (rocketWidth: number, rocketHeight: number): Matter
     { x: rocketWidth / 2, y: rocketHeight / 2 },   // Right bottom
 
     // Nozzle flare
-    { x: rocketWidth / 8, y: rocketHeight / 2 },   // Right nozzle indent
-    { x: -rocketWidth / 8, y: rocketHeight / 2 },  // Left nozzle indent
+    { x: rocketWidth / 9, y: rocketHeight / 2 },   // Right nozzle indent
+    { x: -rocketWidth /9, y: rocketHeight / 2 },  // Left nozzle indent
 
     // Complete the symmetry
     { x: -rocketWidth / 2, y: rocketHeight / 2 },  // Left bottom
@@ -163,7 +164,14 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     const canvas = canvasRef.current;
     const rocket = rocketRef.current;
 
-    const controlRocket = eval(`(${controlFunction})`);
+    let controlRocket
+
+    try {
+    controlRocket = eval(`(${controlFunction})`);
+    } catch {
+      controlRocket = defaultControlRocket
+    }
+
     if (typeof controlRocket !== 'function') {
       console.log("controlRocket is not defined");
       return;
@@ -207,6 +215,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
             width: 60,
           }
         )
+        console.log(control)
 
         const vertices = rocket.vertices;
         const thrustAngle = rocket.angle + control.angleOfThrust - Math.PI / 2

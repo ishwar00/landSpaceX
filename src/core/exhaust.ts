@@ -5,6 +5,7 @@ export class RocketExhaust {
     private animationFrameId?: number;
     private baseSpeed = 5;
     private speedVariance = 30;
+    private maxDistance = 0;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
@@ -52,7 +53,6 @@ export class RocketExhaust {
 
     private emitParticles() {
         const count = Math.floor(30 + 60 * this.exhaustAmount);
-        // console.log(count);
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
         }
@@ -93,7 +93,7 @@ export class RocketExhaust {
         });
 
         // Remove dead particles
-        this.particles = this.particles.filter(p => p.life > 0 && p.size > 0);
+        this.particles = this.particles.filter(p => p.life > 0 && p.size > 0.5);
     }
 
     private drawParticles() {
@@ -103,6 +103,7 @@ export class RocketExhaust {
 
         this.particles.forEach(p => {
             // Calculate distance from exhaust source
+            // 626 max distance
             const distance = Math.hypot(p.x - nozzleMidX, p.y - nozzleMidY);
             const distanceFactor = Math.min(1, distance / maxDistance);
 
@@ -111,11 +112,10 @@ export class RocketExhaust {
             const velocityFactor = Math.min(1, Math.hypot(p.vx, p.vy) / 15);
 
             // Temperature based on distance and life (closer = hotter)
-            const temp = 6000 * (1 - distanceFactor * 0.7) * (velocityFactor + 0.3) * lifeFactor;
-            // console.log(temp)
+            const temp = 12000 -  200 * (distance) * (velocityFactor) * lifeFactor;
 
             // Get color from temperature
-            const [r, g, b] = this.temperatureToColor(100);
+            const [r, g, b] = this.temperatureToColor(temp);
 
             // Create gradient with distance-based falloff
             const gradient = this.ctx.createRadialGradient(
@@ -126,9 +126,9 @@ export class RocketExhaust {
             // Core color (hotter)
             gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.9 * lifeFactor})`);
 
-            // Edge color (cooler based on distance)
-            const edgeColor = this.temperatureToColor(temp * 0.4);
-            gradient.addColorStop(1, `rgba(${edgeColor.join(',')}, ${0.3 * lifeFactor})`);
+            // // Edge color (cooler based on distance)
+            // const edgeColor = this.temperatureToColor(temp * 0.4);
+            // gradient.addColorStop(1, `rgba(${edgeColor.join(',')}, ${0.3 * lifeFactor})`);
 
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
@@ -138,22 +138,23 @@ export class RocketExhaust {
     }
 
     private temperatureToColor(kelvin: number): [number, number, number] {
-        const temp = Math.max(1000, Math.min(10000, kelvin)) / 100;
+        const temp = Math.max(1000, Math.min(13_000, kelvin)) / 100;
+
 
         // Enhanced color calculation
         let r, g, b;
 
-        // if (temp > 66) {
+        if (temp > 66) {
             // Hot region(blue - white)
             r = 255;
             g = Math.max(0, 255 - (temp - 66) * 2.5);
             b = Math.max(0, 255 - (temp - 66) * 1.2);
-        // } else {
-        //     // Cool region (orange-red)
-        //     r = 255;
-        //     g = Math.min(255, 125 + temp * 1.5);
-        //     b = Math.max(0, 50 - temp * 0.5);
-        // }
+        } else {
+            // Cool region (orange-red)
+            r = 255;
+            g = Math.min(255, 125 + temp * 1.5);
+            b = Math.max(0, 50 - temp * 0.5);
+        }
 
         return [
             Math.min(255, r),
