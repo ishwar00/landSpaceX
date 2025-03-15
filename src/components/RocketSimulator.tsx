@@ -125,68 +125,6 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       ctx.fillRect(-rocketWidth / 2 - thrusterWidth, thrusterY, thrusterWidth, thrusterHeight);
       ctx.fillRect(rocketWidth / 2, thrusterY, thrusterWidth, thrusterHeight);
 
-      // Draw exhaust if thrusting
-      try {
-        // console.log(controlFunction);
-        const controlFn = new Function('state', 'landingPad', `return (${controlFunction})(state, landingPad);`);
-        const control = controlFn(
-          {
-            position: rocket.position,
-            velocity: rocket.velocity,
-            angle: rocket.angle,
-            angularVelocity: rocket.angularVelocity,
-            fuel: 100,
-          },
-          {
-            x: landingPad.position.x,
-            y: landingPad.position.y,
-            width: 60,
-          }
-        );
-
-        if (control.mainThrust > 0) {
-          const vertices = rocket.vertices;
-          console.log(rocket.angle * 180 / Math.PI)
-          ctx.fillStyle = '#ff6b00';
-          if (!exhuast) {
-            exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
-          }
-          exhuast.updateParameters( vertices[4], vertices[3], control.mainThrust, rocket.angle);
-          exhuast.startAnimation();
-          exhuast.stopAnimation();
-          // ctx.fillStyle = '#ff6b00';
-          // ctx.beginPath();
-          // ctx.moveTo(-2, rocketHeight / 2);
-          // ctx.lineTo(2, rocketHeight / 2);
-          // ctx.lineTo(0, rocketHeight / 2 + 10 * control.mainThrust);
-          // ctx.closePath();
-          // ctx.fill();
-        }
-
-        if (control.leftThrust > 0) {
-          ctx.fillStyle = '#ff6b00';
-          ctx.beginPath();
-          ctx.moveTo(rocketWidth / 2 + thrusterWidth, thrusterY);
-          ctx.lineTo(rocketWidth / 2 + thrusterWidth, thrusterY + thrusterHeight);
-          ctx.lineTo(rocketWidth / 2 + thrusterWidth + 5 * control.leftThrust, thrusterY + thrusterHeight / 2);
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        if (control.rightThrust > 0) {
-          ctx.fillStyle = '#ff6b00';
-          ctx.beginPath();
-          ctx.moveTo(-rocketWidth / 2 - thrusterWidth, thrusterY);
-          ctx.lineTo(-rocketWidth / 2 - thrusterWidth, thrusterY + thrusterHeight);
-          ctx.lineTo(-rocketWidth / 2 - thrusterWidth - 5 * control.rightThrust, thrusterY + thrusterHeight / 2);
-          ctx.closePath();
-          ctx.fill();
-        }
-      } catch (error) {
-        console.log(error)
-        // Ignore control function errors during rendering
-      }
-
       ctx.restore();
     };
 
@@ -213,6 +151,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     window.addEventListener('resize', handleResize);
     handleResize();
 
+
     // Animation loop
     const animate = () => {
       renderScene();
@@ -237,6 +176,35 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     const canvas = canvasRef.current;
     const rocket = rocketRef.current;
 
+
+    let controlFn;
+    try {
+      controlFn = new Function('state', 'landingPad', `return (${controlFunction})(state, landingPad);`);
+    } catch {
+      controlFn = undefined
+    }
+
+    const control = controlFn?.(
+      {
+        position: rocket.position,
+        velocity: rocket.velocity,
+        angle: rocket.angle,
+        angularVelocity: rocket.angularVelocity,
+        fuel: 100, // TODO: Implement fuel system
+      },
+      {
+        x: canvas.width * 0.7,
+        y: canvas.height - 30,
+        width: 60,
+      }
+    ) ?? { mainThrust: 0, leftThrust: 0, rightThrust: 0 };
+
+    const ctx = canvas!.getContext('2d')!
+    const vertices = rocket.vertices;
+    if (!exhuast) {
+      exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+    }
+
     if (isRunning) {
       let lastTime = 0;
       const animate = (time: number) => {
@@ -244,24 +212,8 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
           const delta = Math.min(time - lastTime, 15);
           Matter.Engine.update(engineRef.current!, delta);
 
+          // console.log("rocketAngle: ", rocket.angle * 180 / Math.PI);
           try {
-            // Execute user's control function
-            const controlFn = new Function('state', 'landingPad', `return (${controlFunction})(state, landingPad);`);
-            const control = controlFn(
-              {
-                position: rocket.position,
-                velocity: rocket.velocity,
-                angle: rocket.angle,
-                angularVelocity: rocket.angularVelocity,
-                fuel: 100, // TODO: Implement fuel system
-              },
-              {
-                x: canvas.width * 0.7,
-                y: canvas.height - 30,
-                width: 60,
-              }
-            )
-
             // Apply forces based on control
             if (control.mainThrust) {
               const force = 0.001;
@@ -283,18 +235,27 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
             onReset();
           }
         }
+        if (!exhuast) {
+          exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+        }
+        exhuast.updateParameters(vertices[4], vertices[3], control.mainThrust, rocket.angle);
+        exhuast.startAnimation();
+        exhuast.stopAnimation();
+
         lastTime = time;
         requestRef.current = requestAnimationFrame(animate);
       };
       requestRef.current = requestAnimationFrame(animate);
     } else {
-      console.log('resetting')
-      // Reset rocket position
       Matter.Body.setPosition(rocket, { x: canvas.width * 0.15, y: canvas.height * 0.15 });
       Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
       Matter.Body.setAngle(rocket, 0);
       Matter.Body.setAngularVelocity(rocket, 0);
+      exhuast.updateParameters(vertices[4], vertices[3], control.mainThrust, rocket.angle);
+      exhuast.startAnimation();
+      exhuast.stopAnimation();
     }
+
 
     return () => {
       if (requestRef.current) {

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { dracula } from '@uiw/codemirror-theme-dracula';
+import { Scratch } from '@/components/Scratch';
 
 export default function Home() {
   const [code, setCode] = useState(`function controlRocket(state, landingPad) {

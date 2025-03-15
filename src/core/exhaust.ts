@@ -42,11 +42,11 @@ export class RocketExhaust {
         this.animationFrameId = requestAnimationFrame(() => this.animate());
         const now = performance.now();
         // const deltaTime = now - this.lastTime;
-        
+
         // Clear canvas with black background
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-        
+
         this.emitParticles();
         this.updateParticles();
         this.drawParticles();
@@ -54,7 +54,8 @@ export class RocketExhaust {
     }
 
     private emitParticles() {
-        const count = Math.floor(50 * this.exhaustAmount);
+        const count = Math.floor(10 + 30 * this.exhaustAmount);
+        // console.log(count);
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
         }
@@ -67,9 +68,10 @@ export class RocketExhaust {
         const y = this.leftPoint.y + t * (this.rightPoint.y - this.leftPoint.y);
 
         // Velocity based on angle (0 = straight up)
-        const speed = 5 + Math.random() * 3;
+        const speed = 8 + Math.random() * 3;
         const velX = -Math.sin(this.angle) * speed;
         const velY = Math.cos(this.angle) * speed;
+        console.log('angle: ', this.angle * 180 / Math.PI, 'velX: ', velX, 'velY: ', velY);
 
         return {
             x,
