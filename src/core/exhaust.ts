@@ -12,11 +12,10 @@ export class RocketExhaust {
         private rightPoint: Matter.Vector,
         private exhaustAmount: number,
         private angle: number,
-    ) {
-        this.startAnimation();
-    }
+    ) {}
 
     startAnimation() {
+        console.log("startAnimation");
         this.animate();
     }
 

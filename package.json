@@ -6,7 +6,8 @@
         "dev": "next dev --turbopack",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "fmt": "npx prettier --write ."
     },
     "dependencies": {
         "@codemirror/lang-javascript": "^6.2.3",

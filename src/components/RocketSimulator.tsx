@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { RocketExhaust } from "@/core/exhaust";
 import { defaultControlRocket } from "@/core/controller";
+import { $try } from "@/utils/try";
 
 interface RocketSimulatorProps {
     controlFunction: string;
@@ -11,7 +12,31 @@ interface RocketSimulatorProps {
     onReset: () => void;
 }
 
-let exhuast: RocketExhaust | null = null;
+interface RocketState {
+    position: Matter.Vector;
+    velocity: Matter.Vector;
+    inertia: number;
+    angle: number;
+    angularVelocity: number;
+}
+
+interface LandingPad {
+    x: number;
+    y: number;
+    width: number;
+}
+
+interface RocketThrust {
+    mainThrust: number;
+    angleOfThrust: number;
+}
+
+type ControllerFn = (
+    state: RocketState,
+    landingPad: LandingPad,
+) => RocketThrust;
+
+let exhaust: RocketExhaust | null = null;
 
 const createRocketVertices = (
     rocketWidth: number,
@@ -35,6 +60,8 @@ const createRocketVertices = (
 
 const RIGHT_NOZZLE = 4;
 const LEFT_NOZZLE = 5;
+const ROCKET_HEIGHT = 60;
+const ROCKET_WIDTH = 8;
 
 const RocketSimulator = ({
     controlFunction,
@@ -57,9 +84,7 @@ const RocketSimulator = ({
         engineRef.current = engine;
 
         // Create custom rocket vertices for triangular shape with nose cone
-        const rocketWidth = 8;
-        const rocketHeight = 60;
-        const vertices = createRocketVertices(rocketWidth, rocketHeight);
+        const vertices = createRocketVertices(ROCKET_WIDTH, ROCKET_HEIGHT);
 
         // Create rocket body
         const rocket = Matter.Bodies.fromVertices(
@@ -165,94 +190,62 @@ const RocketSimulator = ({
 
         const canvas = canvasRef.current;
         const rocket = rocketRef.current;
-
-        let controlRocket;
-
-        try {
-            controlRocket = eval(`(${controlFunction})`);
-        } catch {
-            controlRocket = defaultControlRocket;
-        }
+        const landingPad = {
+            x: canvas.width * 0.7,
+            y: canvas.height - 30,
+            width: 60,
+        };
+        const ctx = canvas!.getContext("2d")!;
+        const controlRocket: ControllerFn = $try(() =>
+            eval(`(${controlFunction})`),
+        ).catch(() => defaultControlRocket);
 
         if (typeof controlRocket !== "function") {
+            // TODO: Add a notification to the user toast
             console.log("controlRocket is not defined");
             return;
         }
 
-        const control: { mainThrust: number; angleOfThrust: number } =
-            controlRocket(
-                {
-                    position: rocket.position,
-                    velocity: rocket.velocity,
-                    angle: rocket.angle,
-                    angularVelocity: rocket.angularVelocity,
-                    fuel: 100, // TODO: Implement fuel system
-                },
-                {
-                    x: canvas.width * 0.7,
-                    y: canvas.height - 30,
-                    width: 60,
-                },
-            );
+        const { mainThrust, angleOfThrust } = controlRocket(rocket, landingPad);
 
-        const ctx = canvas!.getContext("2d")!;
-        if (!exhuast) {
+        if (!exhaust) {
             const vertices = rocket.vertices;
-            const thrustAngle =
-                rocket.angle + control.angleOfThrust - Math.PI / 2;
-            exhuast = new RocketExhaust(
+            const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
+            exhaust = new RocketExhaust(
                 ctx,
                 vertices[LEFT_NOZZLE],
                 vertices[RIGHT_NOZZLE],
-                control.mainThrust,
+                mainThrust,
                 thrustAngle,
             );
+            exhaust.startAnimation();
         }
 
         if (isRunning) {
             let lastTime = 0;
             const animate = (time: number) => {
-                const control: { mainThrust: number; angleOfThrust: number } =
-                    controlRocket(
-                        {
-                            position: rocket.position,
-                            velocity: rocket.velocity,
-                            angle: rocket.angle,
-                            angularVelocity: rocket.angularVelocity,
-                            fuel: 100, // TODO: Implement fuel system
-                        },
-                        {
-                            x: canvas.width * 0.7,
-                            y: canvas.height - 30,
-                            width: 60,
-                        },
-                    );
-                console.log(control);
+                const { mainThrust, angleOfThrust } = controlRocket(
+                    rocket,
+                    landingPad,
+                );
 
                 const vertices = rocket.vertices;
-                const thrustAngle =
-                    rocket.angle + control.angleOfThrust - Math.PI / 2;
+                const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
                 if (lastTime !== 0) {
                     const delta = Math.min(time - lastTime, 15);
                     Matter.Engine.update(engineRef.current!, delta);
 
                     try {
                         // Apply forces based on control
-                        if (control.mainThrust) {
+                        if (mainThrust) {
                             const nozzlePosition = {
                                 x: (vertices[4].x + vertices[5].x) / 2,
                                 y: (vertices[4].y + vertices[5].y) / 2,
                             };
                             const force = 0.001;
                             Matter.Body.applyForce(rocket, nozzlePosition, {
-                                x:
-                                    Math.sin(thrustAngle) *
-                                    force *
-                                    control.mainThrust,
-                                y:
-                                    -Math.cos(thrustAngle) *
-                                    force *
-                                    control.mainThrust,
+                                x: Math.sin(thrustAngle) * force * mainThrust,
+                                y: -Math.cos(thrustAngle) * force * mainThrust,
                             });
                         }
                     } catch (error) {
@@ -260,32 +253,19 @@ const RocketSimulator = ({
                         onReset();
                     }
                 }
-                if (!exhuast) {
-                    exhuast = new RocketExhaust(
-                        ctx,
-                        vertices[LEFT_NOZZLE],
-                        vertices[RIGHT_NOZZLE],
-                        control.mainThrust,
-                        rocket.angle,
-                    );
-                }
-                exhuast.updateParameters(
+                exhaust!.updateParameters(
                     vertices[LEFT_NOZZLE],
                     vertices[RIGHT_NOZZLE],
-                    control.mainThrust,
+                    mainThrust,
                     thrustAngle,
                 );
-                exhuast.startAnimation();
-                exhuast.stopAnimation();
-
                 lastTime = time;
                 requestRef.current = requestAnimationFrame(animate);
             };
-            requestRef.current = requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
         } else {
             const vertices = rocket.vertices;
-            const thrustAngle =
-                rocket.angle + control.angleOfThrust - Math.PI / 2;
+            const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
             Matter.Body.setPosition(rocket, {
                 x: canvas.width * 0.15,
                 y: canvas.height * 0.15,
@@ -293,14 +273,12 @@ const RocketSimulator = ({
             Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
             Matter.Body.setAngle(rocket, 0);
             Matter.Body.setAngularVelocity(rocket, 0);
-            exhuast.updateParameters(
+            exhaust.updateParameters(
                 vertices[LEFT_NOZZLE],
                 vertices[RIGHT_NOZZLE],
-                control.mainThrust,
+                mainThrust,
                 thrustAngle,
             );
-            exhuast.startAnimation();
-            exhuast.stopAnimation();
         }
 
         return () => {
