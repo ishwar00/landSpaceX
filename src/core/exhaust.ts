@@ -3,7 +3,8 @@ import Matter from "matter-js";
 export class RocketExhaust {
     private particles: Particle[] = [];
     private animationFrameId?: number;
-    private lastTime = 0;
+    private baseSpeed = 5;
+    private speedVariance = 30;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
@@ -12,11 +13,11 @@ export class RocketExhaust {
         private exhaustAmount: number,
         private angle: number
     ) {
+        console.log(leftPoint, rightPoint)
         this.startAnimation();
     }
 
     startAnimation() {
-        this.lastTime = performance.now();
         this.animate();
     }
 
@@ -40,8 +41,6 @@ export class RocketExhaust {
 
     private animate() {
         this.animationFrameId = requestAnimationFrame(() => this.animate());
-        const now = performance.now();
-        // const deltaTime = now - this.lastTime;
 
         // Clear canvas with black background
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -50,11 +49,10 @@ export class RocketExhaust {
         this.emitParticles();
         this.updateParticles();
         this.drawParticles();
-        this.lastTime = now;
     }
 
     private emitParticles() {
-        const count = Math.floor(10 + 30 * this.exhaustAmount);
+        const count = Math.floor(30 + 60 * this.exhaustAmount);
         // console.log(count);
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
@@ -64,21 +62,22 @@ export class RocketExhaust {
     private createParticle(): Particle {
         // Create particles between left and right points
         const t = Math.random();
-        const x = this.leftPoint.x + t * (this.rightPoint.x - this.leftPoint.x);
-        const y = this.leftPoint.y + t * (this.rightPoint.y - this.leftPoint.y);
+        const bottomX = (this.rightPoint.x - this.leftPoint.x)
+        const bottomY = (this.rightPoint.y - this.leftPoint.y)
+        const x = this.leftPoint.x + t * Math.cos(this.angle) * bottomX;
+        const y = this.leftPoint.y + t * Math.sin(this.angle) * bottomY;
 
         // Velocity based on angle (0 = straight up)
-        const speed = 8 + Math.random() * 3;
+        const speed = this.baseSpeed + Math.random() * this.speedVariance;
         const velX = -Math.sin(this.angle) * speed;
         const velY = Math.cos(this.angle) * speed;
-        console.log('angle: ', this.angle * 180 / Math.PI, 'velX: ', velX, 'velY: ', velY);
 
         return {
             x,
             y,
-            vx: velX + (Math.random() - 0.5) * 1.5,
-            vy: velY + (Math.random() - 0.5) * 1.5,
-            life: Math.random() * 1,
+            vx: velX,
+            vy: velY,
+            life: Math.random() * 0.5,
             size: Math.random() * 4,
         };
     }
@@ -95,17 +94,73 @@ export class RocketExhaust {
         });
 
         // Remove dead particles
-        this.particles = this.particles.filter(p => p.life > 0 && p.size > 0.5);
+        this.particles = this.particles.filter(p => p.life > 0 && p.size > 0);
     }
 
     private drawParticles() {
+        const nozzleMidX = (this.leftPoint.x + this.rightPoint.x) / 2;
+        const nozzleMidY = (this.leftPoint.y + this.rightPoint.y) / 2;
+        const maxDistance = 100
+
         this.particles.forEach(p => {
-            const alpha = Math.min(p.life, 1);
+            // Calculate distance from exhaust source
+            const distance = Math.hypot(p.x - nozzleMidX, p.y - nozzleMidY);
+            const distanceFactor = Math.min(1, distance / maxDistance);
+
+            // Combined temperature factors
+            const lifeFactor = Math.min(p.life, 1);
+            const velocityFactor = Math.min(1, Math.hypot(p.vx, p.vy) / 15);
+
+            // Temperature based on distance and life (closer = hotter)
+            const temp = 6000 * (1 - distanceFactor * 0.7) * (velocityFactor + 0.3) * lifeFactor;
+            // console.log(temp)
+
+            // Get color from temperature
+            const [r, g, b] = this.temperatureToColor(temp);
+
+            // Create gradient with distance-based falloff
+            const gradient = this.ctx.createRadialGradient(
+                p.x, p.y, 0,
+                p.x, p.y, p.size * 2
+            );
+
+            // Core color (hotter)
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.9 * lifeFactor})`);
+
+            // Edge color (cooler based on distance)
+            const edgeColor = this.temperatureToColor(temp * 0.4);
+            gradient.addColorStop(1, `rgba(${edgeColor.join(',')}, ${0.3 * lifeFactor})`);
+
             this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            this.ctx.fillStyle = `hsla(30, 100%, ${70 * alpha}%, ${alpha})`;
+            this.ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+            this.ctx.fillStyle = gradient;
             this.ctx.fill();
         });
+    }
+
+    private temperatureToColor(kelvin: number): [number, number, number] {
+        const temp = Math.max(1000, Math.min(10000, kelvin)) / 100;
+
+        // Enhanced color calculation
+        let r, g, b;
+
+        if (temp > 66) {
+            // Hot region(blue - white)
+            r = 255;
+            g = Math.max(0, 255 - (temp - 66) * 2.5);
+            b = Math.max(0, 255 - (temp - 66) * 1.2);
+        } else {
+            // Cool region (orange-red)
+            r = 255;
+            g = Math.min(255, 125 + temp * 1.5);
+            b = Math.max(0, 50 - temp * 0.5);
+        }
+
+        return [
+            Math.min(255, r),
+            Math.min(255, g),
+            Math.min(255, b)
+        ];
     }
 }
 

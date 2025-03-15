@@ -12,6 +12,27 @@ interface RocketSimulatorProps {
 
 let exhuast: RocketExhaust | null = null;
 
+const createRocketVertices = (rocketWidth: number, rocketHeight: number): Matter.Vector[] => {
+  return [
+    // Nose cone and main body
+    { x: 0, y: -rocketHeight / 2 },                // Top point
+    { x: rocketWidth / 2, y: -rocketHeight / 3 },  // Right shoulder
+    { x: rocketWidth / 2, y: rocketHeight / 2 },   // Right bottom
+
+    // Nozzle flare
+    { x: rocketWidth / 8, y: rocketHeight / 2 },   // Right nozzle indent
+    { x: -rocketWidth / 8, y: rocketHeight / 2 },  // Left nozzle indent
+
+    // Complete the symmetry
+    { x: -rocketWidth / 2, y: rocketHeight / 2 },  // Left bottom
+    { x: -rocketWidth / 2, y: -rocketHeight / 3 }, // Left shoulder
+  ];
+};
+
+
+const RIGHT_NOZZLE = 4
+const LEFT_NOZZLE = 5
+
 const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
@@ -31,13 +52,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     // Create custom rocket vertices for triangular shape with nose cone
     const rocketWidth = 8;
     const rocketHeight = 60;
-    const vertices = [
-      { x: 0, y: -rocketHeight / 2 },               // Top point
-      { x: rocketWidth / 2, y: -rocketHeight / 3 },   // Right shoulder
-      { x: rocketWidth / 2, y: rocketHeight / 2 },    // Right bottom
-      { x: -rocketWidth / 2, y: rocketHeight / 2 },   // Left bottom
-      { x: -rocketWidth / 2, y: -rocketHeight / 3 },  // Left shoulder
-    ];
+    const vertices = createRocketVertices(rocketWidth, rocketHeight);
 
     // Create rocket body
     const rocket = Matter.Bodies.fromVertices(
@@ -70,18 +85,6 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     // Add bodies to world
     Matter.Composite.add(engine.world, [rocket, landingPad]);
 
-    // Setup renderer
-    const render = Matter.Render.create({
-      canvas: canvas,
-      engine: engine,
-      options: {
-        width: canvas.width,
-        height: canvas.height,
-        wireframes: false,
-        background: '#000',
-      },
-    });
-
     // Custom render function
     const renderScene = () => {
       const ctx = canvas.getContext('2d');
@@ -100,38 +103,19 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
         5
       );
 
-      // Save context for rocket rotation
-      ctx.save();
-      // ctx.translate(rocket.position.x, rocket.position.y);
-      // ctx.rotate(rocket.angle);
 
       // Draw rocket body
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       const vertices = rocket.vertices;
-      ctx.moveTo(vertices[0].x, vertices[0].y);
-      for (let i = 1; i < vertices.length; i++) {
+      for (let i = 0; i < vertices.length; i++) {
         const vertex = vertices[i];
         ctx.lineTo(vertex.x, vertex.y);
       }
       ctx.closePath();
       ctx.fill();
-
-      // Draw side thrusters
-      ctx.fillStyle = '#ddd';
-      const thrusterWidth = 3;
-      const thrusterHeight = 3;
-      const thrusterY = rocketHeight * 0.4;
-      ctx.fillRect(-rocketWidth / 2 - thrusterWidth, thrusterY, thrusterWidth, thrusterHeight);
-      ctx.fillRect(rocketWidth / 2, thrusterY, thrusterWidth, thrusterHeight);
-
-      ctx.restore();
     };
 
-    // Override Matter.js render with custom render
-    // Matter.Render.run = () => { };
-    render.canvas.width = canvas.width;
-    render.canvas.height = canvas.height;
     Matter.Runner.run(engine);
     // Resize handler
     const handleResize = () => {
@@ -202,7 +186,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
     const ctx = canvas!.getContext('2d')!
     const vertices = rocket.vertices;
     if (!exhuast) {
-      exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+      exhuast = new RocketExhaust(ctx, vertices[LEFT_NOZZLE], vertices[RIGHT_NOZZLE], control.mainThrust, rocket.angle);
     }
 
     if (isRunning) {
@@ -212,6 +196,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
           const delta = Math.min(time - lastTime, 15);
           Matter.Engine.update(engineRef.current!, delta);
 
+          // console.log("verticess: ", vertices.length)
           // console.log("rocketAngle: ", rocket.angle * 180 / Math.PI);
           try {
             // Apply forces based on control
@@ -236,9 +221,9 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
           }
         }
         if (!exhuast) {
-          exhuast = new RocketExhaust(ctx, vertices[4], vertices[3], control.mainThrust, rocket.angle);
+          exhuast = new RocketExhaust(ctx, vertices[LEFT_NOZZLE], vertices[RIGHT_NOZZLE], control.mainThrust, rocket.angle);
         }
-        exhuast.updateParameters(vertices[4], vertices[3], control.mainThrust, rocket.angle);
+        exhuast.updateParameters(vertices[LEFT_NOZZLE], vertices[RIGHT_NOZZLE], control.mainThrust, rocket.angle);
         exhuast.startAnimation();
         exhuast.stopAnimation();
 
@@ -251,7 +236,7 @@ const RocketSimulator = ({ controlFunction, isRunning, onReset }: RocketSimulato
       Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
       Matter.Body.setAngle(rocket, 0);
       Matter.Body.setAngularVelocity(rocket, 0);
-      exhuast.updateParameters(vertices[4], vertices[3], control.mainThrust, rocket.angle);
+      exhuast.updateParameters(vertices[LEFT_NOZZLE], vertices[RIGHT_NOZZLE], control.mainThrust, rocket.angle);
       exhuast.startAnimation();
       exhuast.stopAnimation();
     }
