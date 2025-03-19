@@ -19,7 +19,8 @@ export interface RocketState {
     mass: number;
     angle: number;
     angularVelocity: number;
-    nozzle: Matter.Vector
+    nozzle: Matter.Vector;
+    maxThrust: number;
 }
 
 export interface Environment {
@@ -38,10 +39,7 @@ export interface RocketThrust {
     angleOfThrust: number;
 }
 
-type ControllerFn = (
-    state: RocketState,
-    landingPad: LandingPad,
-) => RocketThrust;
+type ControllerFn = (state: RocketState, env: Environment) => RocketThrust;
 
 let exhaust: RocketExhaust | null = null;
 
@@ -220,7 +218,14 @@ const RocketSimulator = ({
             (rocket.vertices[4].y + rocket.vertices[5].y) / 2,
         );
 
-        const { mainThrust, angleOfThrust } = controlRocket({ ...rocket, nozzle: nozzlePosition }, landingPad);
+        const { mainThrust, angleOfThrust } = controlRocket(
+            {
+                ...rocket,
+                nozzle: nozzlePosition,
+                maxThrust: 2 * rocket.mass * GRAVITY,
+            },
+            { gravity: Matter.Vector.create(0, GRAVITY), landingPad },
+        );
 
         if (!exhaust) {
             const vertices = rocket.vertices;
@@ -244,24 +249,30 @@ const RocketSimulator = ({
                     (rocket.vertices[4].y + rocket.vertices[5].y) / 2,
                 );
 
+                const maxThrust = 2 * rocket.mass * GRAVITY;
                 const { mainThrust, angleOfThrust } = controlRocket(
-                    { ...rocket, nozzle: nozzlePosition },
-                    landingPad,
+                    { ...rocket, nozzle: nozzlePosition, maxThrust },
+                    { gravity: Matter.Vector.create(0, GRAVITY), landingPad },
                 );
 
                 const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
                 if (lastTime !== 0) {
-                    Matter.Engine.update(engineRef.current!);
-
                     try {
                         // Apply forces based on control
                         if (mainThrust) {
-                            const maxThrust = 2 * rocket.mass * GRAVITY;
                             Matter.Body.applyForce(rocket, nozzlePosition, {
-                                x: Math.sin(thrustAngle) * maxThrust * mainThrust,
-                                y: -Math.cos(thrustAngle) * maxThrust * mainThrust,
+                                x:
+                                    Math.sin(thrustAngle) *
+                                    maxThrust *
+                                    mainThrust,
+                                y:
+                                    -Math.cos(thrustAngle) *
+                                    maxThrust *
+                                    mainThrust,
                             });
                         }
+
+                        Matter.Engine.update(engineRef.current!);
                     } catch (error) {
                         console.error("Error in control function:", error);
                         onReset();

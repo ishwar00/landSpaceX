@@ -21,7 +21,7 @@ export class RocketExhaust {
         private rightPoint: Matter.Vector,
         private exhaustAmount: number,
         private angle: number,
-    ) { }
+    ) {}
 
     startAnimation() {
         console.log("startAnimation");
@@ -100,9 +100,7 @@ export class RocketExhaust {
         });
 
         // Remove dead particles
-        this.particles = this.particles.filter(
-            (p) => p.life > 0 && p.size > 0,
-        );
+        this.particles = this.particles.filter((p) => p.life > 0 && p.size > 0);
     }
 
     private drawParticles() {
@@ -172,4 +170,3 @@ export class RocketExhaust {
         return [Math.min(255, r), Math.min(255, g), Math.min(255, b)];
     }
 }
-

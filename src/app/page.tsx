@@ -7,8 +7,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 
 export default function Home() {
-    const [code, setCode] =
-        useState(`function controlRocket(state, landingPad) {
+    const [code, setCode] = useState(`function controlRocket(state, env) {
   // state = {
   //   position: { x, y },
   //   velocity: { x, y },
@@ -17,11 +16,13 @@ export default function Home() {
   //   fuel
   // }
   // landingPad = { x, y, width }
+    const {landingPad, gravity: {y}} = env
+    const {mass,  maxThrust} = state
   
   // Example: Apply thrust when above landing pad
   if (state.position.x < landingPad.x) {
     return {
-      mainThrust: 0.5,    // 0 to 1
+      mainThrust: (mass * y)/ maxThrust,    // 0 to 1
       angleOfThrust: Math.PI/2,    // 0 to 360
     };
   }
