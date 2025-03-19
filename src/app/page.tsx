@@ -33,6 +33,7 @@ export default function Home() {
   };
 }`);
 
+    const [savedCode, setSavedCode] = useState(code);
     const [isRunning, setIsRunning] = useState(false);
 
     return (
@@ -55,12 +56,12 @@ export default function Home() {
             <div className="flex flex-1 gap-0.5 px-0.5 pb-0.5">
                 <div className="w-[65%] bg-black overflow-hidden border border-gray-800/30">
                     <RocketSimulator
-                        controlFunction={code}
+                        controlFunction={savedCode}
                         isRunning={isRunning}
                         onReset={() => setIsRunning(false)}
                     />
                 </div>
-                <div className="w-[35%] bg-[#111] overflow-hidden border border-gray-800/30">
+                <div className="w-[35%] flex flex-col bg-[#111] overflow-hidden border border-gray-800/30">
                     <CodeMirror
                         value={code}
                         onChange={setCode}
@@ -75,8 +76,17 @@ export default function Home() {
                             autocompletion: true,
                         }}
                         editable={!isRunning}
-                        className="h-full"
+                        className="flex-1"
                     />
+                    <div className="p-1 border-t border-gray-800/30">
+                        <button
+                            onClick={() => setSavedCode(code)}
+                            disabled={isRunning}
+                            className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 text-[10px] rounded-[1px]"
+                        >
+                            Save Code
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

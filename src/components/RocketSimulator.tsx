@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { RocketExhaust } from "@/core/exhaust";
-import { defaultControlRocket } from "@/core/controller";
+import { defaultControlRocket } from "@/core/controller/planner";
 import { $try } from "@/utils/try";
 
 export interface RocketSimulatorProps {
