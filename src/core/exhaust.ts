@@ -1,10 +1,19 @@
 import Matter from "matter-js";
 
+type Particle = {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    size: number;
+};
+
 export class RocketExhaust {
     private particles: Particle[] = [];
     private animationFrameId?: number;
-    private baseSpeed = 2;
-    private speedVariance = 30;
+    private baseSpeed = 1;
+    private speedVariance = 20;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
@@ -12,7 +21,7 @@ export class RocketExhaust {
         private rightPoint: Matter.Vector,
         private exhaustAmount: number,
         private angle: number,
-    ) {}
+    ) { }
 
     startAnimation() {
         console.log("startAnimation");
@@ -50,7 +59,7 @@ export class RocketExhaust {
     }
 
     private emitParticles() {
-        const count = Math.floor(30 + 60 * this.exhaustAmount);
+        const count = Math.floor(60 + 80 * this.exhaustAmount);
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
         }
@@ -74,8 +83,8 @@ export class RocketExhaust {
             y,
             vx: velX,
             vy: velY,
-            life: Math.random() * 0.5,
-            size: Math.random() * 4,
+            life: Math.random() * 0.4,
+            size: Math.random() * 3,
         };
     }
 
@@ -92,20 +101,18 @@ export class RocketExhaust {
 
         // Remove dead particles
         this.particles = this.particles.filter(
-            (p) => p.life > 0 && p.size > 0.5,
+            (p) => p.life > 0 && p.size > 0,
         );
     }
 
     private drawParticles() {
         const nozzleMidX = (this.leftPoint.x + this.rightPoint.x) / 2;
         const nozzleMidY = (this.leftPoint.y + this.rightPoint.y) / 2;
-        const maxDistance = 100;
 
         this.particles.forEach((p) => {
             // Calculate distance from exhaust source
             // 626 max distance
             const distance = Math.hypot(p.x - nozzleMidX, p.y - nozzleMidY);
-            const distanceFactor = Math.min(1, distance / maxDistance);
 
             // Combined temperature factors
             const lifeFactor = Math.min(p.life, 1);
@@ -166,11 +173,3 @@ export class RocketExhaust {
     }
 }
 
-type Particle = {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    size: number;
-};

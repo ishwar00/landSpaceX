@@ -6,27 +6,34 @@ import { RocketExhaust } from "@/core/exhaust";
 import { defaultControlRocket } from "@/core/controller";
 import { $try } from "@/utils/try";
 
-interface RocketSimulatorProps {
+export interface RocketSimulatorProps {
     controlFunction: string;
     isRunning: boolean;
     onReset: () => void;
 }
 
-interface RocketState {
-    position: Matter.Vector;
+export interface RocketState {
+    position: Matter.Vector; // center of mass
     velocity: Matter.Vector;
     inertia: number;
+    mass: number;
     angle: number;
     angularVelocity: number;
+    nozzle: Matter.Vector
 }
 
-interface LandingPad {
+export interface Environment {
+    gravity: Matter.Vector;
+    landingPad: LandingPad;
+}
+
+export interface LandingPad {
     x: number;
     y: number;
     width: number;
 }
 
-interface RocketThrust {
+export interface RocketThrust {
     mainThrust: number;
     angleOfThrust: number;
 }
@@ -62,6 +69,8 @@ const RIGHT_NOZZLE = 4;
 const LEFT_NOZZLE = 5;
 const ROCKET_HEIGHT = 60;
 const ROCKET_WIDTH = 8;
+const MASS_OF_ROCKET = 100;
+const GRAVITY = 0.001;
 
 const RocketSimulator = ({
     controlFunction,
@@ -79,7 +88,7 @@ const RocketSimulator = ({
 
         // Setup Matter.js engine
         const engine = Matter.Engine.create({
-            gravity: { x: 0, y: 0.5 },
+            gravity: { x: 0, y: 1, scale: GRAVITY },
         });
         engineRef.current = engine;
 
@@ -92,7 +101,7 @@ const RocketSimulator = ({
             canvas.height * 0.15, // y position
             [vertices],
             {
-                mass: 1,
+                mass: MASS_OF_ROCKET,
                 friction: 0,
                 frictionAir: 0,
                 restitution: 0,
@@ -206,7 +215,12 @@ const RocketSimulator = ({
             return;
         }
 
-        const { mainThrust, angleOfThrust } = controlRocket(rocket, landingPad);
+        const nozzlePosition = Matter.Vector.create(
+            (rocket.vertices[4].x + rocket.vertices[5].x) / 2,
+            (rocket.vertices[4].y + rocket.vertices[5].y) / 2,
+        );
+
+        const { mainThrust, angleOfThrust } = controlRocket({ ...rocket, nozzle: nozzlePosition }, landingPad);
 
         if (!exhaust) {
             const vertices = rocket.vertices;
@@ -224,28 +238,28 @@ const RocketSimulator = ({
         if (isRunning) {
             let lastTime = 0;
             const animate = (time: number) => {
+                const vertices = rocket.vertices;
+                const nozzlePosition = Matter.Vector.create(
+                    (rocket.vertices[4].x + rocket.vertices[5].x) / 2,
+                    (rocket.vertices[4].y + rocket.vertices[5].y) / 2,
+                );
+
                 const { mainThrust, angleOfThrust } = controlRocket(
-                    rocket,
+                    { ...rocket, nozzle: nozzlePosition },
                     landingPad,
                 );
 
-                const vertices = rocket.vertices;
                 const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
                 if (lastTime !== 0) {
-                    const delta = Math.min(time - lastTime, 15);
-                    Matter.Engine.update(engineRef.current!, delta);
+                    Matter.Engine.update(engineRef.current!);
 
                     try {
                         // Apply forces based on control
                         if (mainThrust) {
-                            const nozzlePosition = {
-                                x: (vertices[4].x + vertices[5].x) / 2,
-                                y: (vertices[4].y + vertices[5].y) / 2,
-                            };
-                            const force = 0.001;
+                            const maxThrust = 2 * rocket.mass * GRAVITY;
                             Matter.Body.applyForce(rocket, nozzlePosition, {
-                                x: Math.sin(thrustAngle) * force * mainThrust,
-                                y: -Math.cos(thrustAngle) * force * mainThrust,
+                                x: Math.sin(thrustAngle) * maxThrust * mainThrust,
+                                y: -Math.cos(thrustAngle) * maxThrust * mainThrust,
                             });
                         }
                     } catch (error) {
@@ -265,7 +279,6 @@ const RocketSimulator = ({
             requestAnimationFrame(animate);
         } else {
             const vertices = rocket.vertices;
-            const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
             Matter.Body.setPosition(rocket, {
                 x: canvas.width * 0.15,
                 y: canvas.height * 0.15,
@@ -273,6 +286,7 @@ const RocketSimulator = ({
             Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
             Matter.Body.setAngle(rocket, 0);
             Matter.Body.setAngularVelocity(rocket, 0);
+            const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
             exhaust.updateParameters(
                 vertices[LEFT_NOZZLE],
                 vertices[RIGHT_NOZZLE],
