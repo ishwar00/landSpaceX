@@ -13,7 +13,7 @@ export class RocketExhaust {
     private particles: Particle[] = [];
     private animationFrameId?: number;
     private baseSpeed = 1;
-    private speedVariance = 20;
+    private speedVariance = 50;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
@@ -59,7 +59,7 @@ export class RocketExhaust {
     }
 
     private emitParticles() {
-        const count = Math.floor(60 + 80 * this.exhaustAmount);
+        const count = Math.floor(100 + 150 * this.exhaustAmount);
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
         }
@@ -67,14 +67,14 @@ export class RocketExhaust {
 
     private createParticle(): Particle {
         // Create particles between left and right points
-        const t = Math.random();
+        const t = Math.random() * Math.random();
         const bottomX = this.rightPoint.x - this.leftPoint.x;
         const bottomY = this.rightPoint.y - this.leftPoint.y;
         const x = this.leftPoint.x + t * Math.cos(this.angle) * bottomX;
         const y = this.leftPoint.y + t * Math.sin(this.angle) * bottomY;
 
         // Velocity based on angle (0 = straight up)
-        const speed = this.baseSpeed + Math.random() * this.speedVariance;
+        const speed = Math.random() * this.speedVariance;
         const velX = -Math.sin(this.angle) * speed;
         const velY = Math.cos(this.angle) * speed;
 
@@ -83,8 +83,8 @@ export class RocketExhaust {
             y,
             vx: velX,
             vy: velY,
-            life: Math.random() * 0.4,
-            size: Math.random() * 3,
+            life: 0.2,
+            size: Math.random(),
         };
     }
 
@@ -92,11 +92,11 @@ export class RocketExhaust {
         this.particles.forEach((p) => {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.1; // Gravity
-            p.vx *= 0.97; // Air resistance
+            p.vy += 0.01; // Gravity
+            // p.vx *= 0.99; // Air resistance
             p.vy *= 0.97;
             p.life -= 0.02;
-            p.size *= 0.97;
+            p.size *= 0.99;
         });
 
         // Remove dead particles

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { RocketExhaust } from "@/core/exhaust";
-import { defaultControlRocket } from "@/core/controller/planner";
+import { defaultController } from "@/core/controller";
 import { $try } from "@/utils/try";
 
 export interface RocketSimulatorProps {
@@ -24,7 +24,7 @@ export interface RocketState {
 }
 
 export interface Environment {
-    gravity: Matter.Vector;
+    gravity: number;
     landingPad: LandingPad;
 }
 
@@ -203,9 +203,9 @@ const RocketSimulator = ({
             width: 60,
         };
         const ctx = canvas!.getContext("2d")!;
-        const controlRocket: ControllerFn = $try(() =>
+        let controlRocket: ControllerFn = $try(() =>
             eval(`(${controlFunction})`),
-        ).catch(() => defaultControlRocket);
+        ).catch(() => defaultController);
 
         if (typeof controlRocket !== "function") {
             // TODO: Add a notification to the user toast
@@ -218,14 +218,22 @@ const RocketSimulator = ({
             (rocket.vertices[4].y + rocket.vertices[5].y) / 2,
         );
 
-        const { mainThrust, angleOfThrust } = controlRocket(
-            {
-                ...rocket,
-                nozzle: nozzlePosition,
-                maxThrust: 2 * rocket.mass * GRAVITY,
-            },
-            { gravity: Matter.Vector.create(0, GRAVITY), landingPad },
-        );
+        const { mainThrust, angleOfThrust } = $try(() =>
+            controlRocket(
+                {
+                    ...rocket,
+                    nozzle: nozzlePosition,
+                    maxThrust: 2 * rocket.mass * GRAVITY,
+                },
+                { gravity: GRAVITY, landingPad },
+            ),
+        ).catch((err) => {
+            console.error("Error in control function:", err);
+            return {
+                mainThrust: 0,
+                angleOfThrust: Math.PI / 2,
+            }
+        });
 
         if (!exhaust) {
             const vertices = rocket.vertices;
@@ -250,33 +258,35 @@ const RocketSimulator = ({
                 );
 
                 const maxThrust = 2 * rocket.mass * GRAVITY;
-                const { mainThrust, angleOfThrust } = controlRocket(
-                    { ...rocket, nozzle: nozzlePosition, maxThrust },
-                    { gravity: Matter.Vector.create(0, GRAVITY), landingPad },
-                );
+                const { mainThrust, angleOfThrust } = $try(() =>
+                    controlRocket(
+                        { ...rocket, nozzle: nozzlePosition, maxThrust },
+                        { gravity: GRAVITY, landingPad },
+                    ),
+                ).catch((err) => {
+                    console.error("Error in control function:", err);
+                    return {
+                        mainThrust: 0,
+                        angleOfThrust: Math.PI / 2,
+                    }
+                });
+
+                setTimeout(() => {
+                    controlRocket = defaultController;
+                }, 1000);
 
                 const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
                 if (lastTime !== 0) {
-                    try {
-                        // Apply forces based on control
-                        if (mainThrust) {
-                            Matter.Body.applyForce(rocket, nozzlePosition, {
-                                x:
-                                    Math.sin(thrustAngle) *
-                                    maxThrust *
-                                    mainThrust,
-                                y:
-                                    -Math.cos(thrustAngle) *
-                                    maxThrust *
-                                    mainThrust,
-                            });
-                        }
-
-                        Matter.Engine.update(engineRef.current!);
-                    } catch (error) {
-                        console.error("Error in control function:", error);
-                        onReset();
+                    // Apply forces based on control
+                    if (mainThrust) {
+                        Matter.Body.applyForce(rocket, nozzlePosition, {
+                            x: Math.sin(thrustAngle) * maxThrust * mainThrust,
+                            y: -Math.cos(thrustAngle) * maxThrust * mainThrust,
+                        });
                     }
+
+                    // Matter.Engine.update(engineRef.current!);
+                    Matter.Engine.update(engineRef.current!, 5);
                 }
                 exhaust!.updateParameters(
                     vertices[LEFT_NOZZLE],
@@ -297,6 +307,9 @@ const RocketSimulator = ({
             Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
             Matter.Body.setAngle(rocket, 0);
             Matter.Body.setAngularVelocity(rocket, 0);
+            console.log("angle: ", (rocket.angle * 180) / Math.PI);
+            console.log("angleOfThrust: ", (angleOfThrust * 180) / Math.PI);
+            console.log("mainThrust: ", mainThrust);
             const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
             exhaust.updateParameters(
                 vertices[LEFT_NOZZLE],

@@ -1,4 +1,5 @@
 {
     "lineWidth": 120,
-    "tabWidth": 4
+    "tabWidth": 4,
+    "printWidth": 80
 }

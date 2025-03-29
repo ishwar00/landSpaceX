@@ -16,13 +16,13 @@ export default function Home() {
   //   fuel
   // }
   // landingPad = { x, y, width }
-    const {landingPad, gravity: {y}} = env
+    const {landingPad, gravity} = env
     const {mass,  maxThrust} = state
   
   // Example: Apply thrust when above landing pad
-  if (state.position.x < landingPad.x) {
+  if (state.position.y < landingPad.y) {
     return {
-      mainThrust: (mass * y)/ maxThrust,    // 0 to 1
+      mainThrust: (mass * gravity)/ maxThrust,    // 0 to 1
       angleOfThrust: Math.PI/2,    // 0 to 360
     };
   }
