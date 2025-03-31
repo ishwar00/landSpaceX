@@ -13,7 +13,7 @@ export class RocketExhaust {
     private particles: Particle[] = [];
     private animationFrameId?: number;
     private baseSpeed = 1;
-    private speedVariance = 50;
+    private speedVariance = 30;
 
     constructor(
         private ctx: CanvasRenderingContext2D,
@@ -67,7 +67,7 @@ export class RocketExhaust {
 
     private createParticle(): Particle {
         // Create particles between left and right points
-        const t = Math.random() * Math.random();
+        const t = Math.random()
         const bottomX = this.rightPoint.x - this.leftPoint.x;
         const bottomY = this.rightPoint.y - this.leftPoint.y;
         const x = this.leftPoint.x + t * Math.cos(this.angle) * bottomX;
@@ -83,8 +83,8 @@ export class RocketExhaust {
             y,
             vx: velX,
             vy: velY,
-            life: 0.2,
-            size: Math.random(),
+            life: Math.random() * 1,
+            size: Math.random() * 1.5,
         };
     }
 
@@ -100,7 +100,7 @@ export class RocketExhaust {
         });
 
         // Remove dead particles
-        this.particles = this.particles.filter((p) => p.life > 0 && p.size > 0);
+        this.particles = this.particles.filter((p) => p.life > 0.5 && p.size > 0);
     }
 
     private drawParticles() {

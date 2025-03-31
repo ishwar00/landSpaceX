@@ -39,7 +39,7 @@ const Scratch = () => {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const vertices = box.vertices;
-            console.log(vertices);
+            // console.log(vertices);
             ctx.fillStyle = "blue";
             ctx.beginPath();
             ctx.moveTo(vertices[0].x, vertices[0].y);
