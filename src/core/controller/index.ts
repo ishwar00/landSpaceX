@@ -13,8 +13,8 @@ export function defaultController(
     rocketState: RocketState,
     env: Environment,
 ): RocketThrust {
-    console.log("defaultController called");
-    console.log("angle: ", (rocketState.angle * 180) / Math.PI);
+    // console.log("defaultController called");
+    // console.log("angle: ", (rocketState.angle * 180) / Math.PI);
     if (steps.length === 0) {
         steps = planner(rocketState, env);
     }

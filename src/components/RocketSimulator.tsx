@@ -130,7 +130,7 @@ const RocketSimulator = ({
             if (!ctx || !rocket) return;
 
             // Clear canvas
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw landing pad
@@ -143,7 +143,7 @@ const RocketSimulator = ({
             );
 
             // Draw rocket body
-            ctx.fillStyle = "#fff";
+            ctx.fillStyle = "gray";
             ctx.beginPath();
             const vertices = rocket.vertices;
             for (let i = 0; i < vertices.length; i++) {
@@ -307,9 +307,6 @@ const RocketSimulator = ({
             Matter.Body.setVelocity(rocket, { x: 0, y: 0 });
             Matter.Body.setAngle(rocket, 0);
             Matter.Body.setAngularVelocity(rocket, 0);
-            console.log("angle: ", (rocket.angle * 180) / Math.PI);
-            console.log("angleOfThrust: ", (angleOfThrust * 180) / Math.PI);
-            console.log("mainThrust: ", mainThrust);
             const thrustAngle = rocket.angle + angleOfThrust - Math.PI / 2;
             exhaust.updateParameters(
                 vertices[LEFT_NOZZLE],
@@ -327,7 +324,7 @@ const RocketSimulator = ({
     }, [isRunning, controlFunction, onReset]);
 
     return (
-        <canvas ref={canvasRef} className="w-full h-full background-black" />
+        <canvas ref={canvasRef} className="w-full h-full background-white" />
     );
 };
 

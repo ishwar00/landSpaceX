@@ -50,8 +50,8 @@ export class RocketExhaust {
         this.animationFrameId = requestAnimationFrame(() => this.animate());
 
         // Clear canvas with black background
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-        this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+        // this.ctx.fillStyle = "white";
+        // this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
         this.emitParticles();
         this.updateParticles();
